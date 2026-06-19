@@ -47,10 +47,8 @@ jobs:
       JWT_EXPIRE_MIN: ${{ secrets.JWT_EXPIRE_MIN }}
 
       # Reverse proxy backend addresses
-      ADDRESS_AUTH: ${{ secrets.ADDRESS_AUTH }}
-      ADDRESS_COMMAND: ${{ secrets.ADDRESS_COMMAND }}
-      ADDRESS_QUERY: ${{ secrets.ADDRESS_QUERY }}
-      ADDRESS_SIGNALING: ${{ secrets.ADDRESS_SIGNALING }}
+      ADDRESS_ECOMMERCE: ${{ secrets.ADDRESS_ECOMMERCE }}
+      ADDRESS_TASKCOPER: ${{ secrets.ADDRESS_TASKCOPER }}
 
       # Cloudflare
       CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}

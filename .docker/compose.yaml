@@ -20,27 +20,17 @@ x-gateway-env: &gateway-env
   JwtOption__ExpireMin: ${JWT_EXPIRE_MIN:-5}
 
   # Reverse proxy routes
-  ReverseProxy__Routes__authApiRoute__ClusterId: authApiCluster
-  ReverseProxy__Routes__authApiRoute__Match__Path: auth-api/{**catch-all}
-  ReverseProxy__Routes__authApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+  ReverseProxy__Routes__ecommerceApiRoute__ClusterId: ecommerceApiCluster
+  ReverseProxy__Routes__ecommerceApiRoute__Match__Path: ecommerce-api/{**catch-all}
+  ReverseProxy__Routes__ecommerceApiRoute__Transforms__0__PathPattern: api/{**catch-all}
 
-  ReverseProxy__Routes__commandApiRoute__ClusterId: commandApiCluster
-  ReverseProxy__Routes__commandApiRoute__Match__Path: command-api/{**catch-all}
-  ReverseProxy__Routes__commandApiRoute__Transforms__0__PathPattern: api/{**catch-all}
-
-  ReverseProxy__Routes__queryApiRoute__ClusterId: queryApiCluster
-  ReverseProxy__Routes__queryApiRoute__Match__Path: query-api/{**catch-all}
-  ReverseProxy__Routes__queryApiRoute__Transforms__0__PathPattern: api/{**catch-all}
-
-  ReverseProxy__Routes__signalingApiRoute__ClusterId: signalingApiCluster
-  ReverseProxy__Routes__signalingApiRoute__Match__Path: signaling-api/{**catch-all}
-  ReverseProxy__Routes__signalingApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+  ReverseProxy__Routes__taskcoperApiRoute__ClusterId: taskcoperApiCluster
+  ReverseProxy__Routes__taskcoperApiRoute__Match__Path: taskcoper-api/{**catch-all}
+  ReverseProxy__Routes__taskcoperApiRoute__Transforms__0__PathPattern: api/{**catch-all}
 
   # Reverse proxy clusters (per-environment backend addresses)
-  ReverseProxy__Clusters__authApiCluster__Destinations__Destination1__Address: ${ADDRESS_AUTH}
-  ReverseProxy__Clusters__commandApiCluster__Destinations__Destination1__Address: ${ADDRESS_COMMAND}
-  ReverseProxy__Clusters__queryApiCluster__Destinations__Destination1__Address: ${ADDRESS_QUERY}
-  ReverseProxy__Clusters__signalingApiCluster__Destinations__Destination1__Address: ${ADDRESS_SIGNALING}
+  ReverseProxy__Clusters__ecommerceApiCluster__Destinations__Destination1__Address: ${ADDRESS_ECOMMERCE}
+  ReverseProxy__Clusters__taskcoperApiCluster__Destinations__Destination1__Address: ${ADDRESS_TASKCOPER}
 
   AllowedHosts: "*"
 
