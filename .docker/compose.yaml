@@ -50,7 +50,7 @@ services:
       <<: *gateway-env
     ports:
       - "${HTTP_PORT}:8080"
-    networks: [hoatheomua-gateway-network-dev]
+    networks: [hoatheomua-gateway-network-dev, hoatheomua-network-dev]
     profiles: [dev, api-dev, api, dev-pull]
 
   hoatheomua-gateway-prod:
@@ -89,3 +89,9 @@ networks:
     driver: bridge
     ipam:
       driver: default
+  # Shared with hoatheomua-be (dev) so the gateway can reach hoatheomua-api-dev:8080.
+  # Owned/created by the be's dev compose — must already exist before `up`.
+  hoatheomua-network-dev:
+    name: hoatheomua-network-dev
+    external: true
+
