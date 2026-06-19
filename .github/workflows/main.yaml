@@ -1,0 +1,126 @@
+name: Deploy Application
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+jobs:
+  build-application:
+    name: Build / Gateway
+    uses: ./.github/workflows/build-image.yaml
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+    with:
+      actor: ${{ github.actor }}
+      repository: ${{ github.repository }}
+
+  deploy-gateway-dev:
+    name: Deploy / Dev / Gateway
+    needs: build-application
+    permissions:
+      contents: read
+      packages: write
+    if: ${{ github.ref == 'refs/heads/develop' }}
+    uses: ./.github/workflows/deploy-application.yaml
+    with:
+      actor: ${{ github.actor }}
+      repository: ${{ github.repository }}
+      profile: dev
+      environment: dev
+      tag: dev-latest
+      run-on: hoatheomua
+      pull-profile: dev-pull
+    secrets: inherit
+
+  deploy-gateway-prod:
+    name: Deploy / Prod / Gateway
+    needs: build-application
+    permissions:
+      contents: read
+      packages: write
+    if: ${{ github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/deploy-application.yaml
+    with:
+      actor: ${{ github.actor }}
+      repository: ${{ github.repository }}
+      profile: prod
+      environment: prod
+      tag: prod-latest
+      run-on: hoatheomua
+      pull-profile: prod-pull
+    secrets: inherit
+
+  notify-discord:
+    name: Notify / Discord / CI-CD
+    runs-on: ubuntu-latest
+    env:
+      DISCORD_CI_WEBHOOK_URL: ${{ secrets.DISCORD_CI_WEBHOOK_URL }}
+    needs:
+      - build-application
+      - deploy-gateway-dev
+      - deploy-gateway-prod
+    if: ${{ always() }}
+    steps:
+      - name: Build notification payload
+        id: payload
+        shell: bash
+        run: |
+          BUILD_RESULT="${{ needs.build-application.result }}"
+          TARGET_ENV="none"
+          DEPLOY_RESULT="skipped"
+
+          if [[ "${GITHUB_REF_NAME}" == "develop" ]]; then
+            TARGET_ENV="dev"
+            DEPLOY_RESULT="${{ needs.deploy-gateway-dev.result }}"
+          elif [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            TARGET_ENV="prod"
+            DEPLOY_RESULT="${{ needs.deploy-gateway-prod.result }}"
+          fi
+
+          STATUS_EMOJI="✅"
+          STATUS_TEXT="Success"
+          if [[ "$BUILD_RESULT" != "success" || ( "$TARGET_ENV" != "none" && "$DEPLOY_RESULT" != "success" ) ]]; then
+            STATUS_EMOJI="❌"
+            STATUS_TEXT="Failed"
+          fi
+
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          CONTENT=$(jq -n \
+            --arg statusEmoji "$STATUS_EMOJI" \
+            --arg statusText "$STATUS_TEXT" \
+            --arg repo "${{ github.repository }}" \
+            --arg branch "${{ github.ref_name }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg build "$BUILD_RESULT" \
+            --arg deploy "$DEPLOY_RESULT" \
+            --arg env "$TARGET_ENV" \
+            --arg runUrl "$RUN_URL" \
+            '{content: ($statusEmoji + " **HoaTheoMua Gateway CI/CD " + $statusText + "**\n"
+              + "- Repository: `" + $repo + "`\n"
+              + "- Branch: `" + $branch + "`\n"
+              + "- Triggered by: `" + $actor + "`\n"
+              + "- Build: `" + $build + "`\n"
+              + "- Deploy Env: `" + $env + "`\n"
+              + "- Deploy: `" + $deploy + "`\n"
+              + "- Run: " + $runUrl)}')
+
+          {
+            echo "content<<EOF"
+            echo "$CONTENT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send notification to Discord
+        if: ${{ env.DISCORD_CI_WEBHOOK_URL != '' }}
+        run: |
+          curl -sS -X POST "${{ env.DISCORD_CI_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '${{ steps.payload.outputs.content }}'
+
+      - name: Skip notification (webhook not configured)
+        if: ${{ env.DISCORD_CI_WEBHOOK_URL == '' }}
+        run: echo "DISCORD_CI_WEBHOOK_URL is empty. Skipping Discord notification."

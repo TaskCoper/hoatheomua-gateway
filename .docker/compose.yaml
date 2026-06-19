@@ -1,0 +1,101 @@
+x-cloudflare-tunnel: &cloudflare-tunnel
+  image: cloudflare/cloudflared
+  restart: unless-stopped
+  command: tunnel run
+  environment:
+    - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+
+x-gateway-env: &gateway-env
+  ASPNETCORE_ENVIRONMENT: ${ENVIRONMENT}
+  ASPNETCORE_URLS: http://+:8080
+
+  # Logging
+  Logging__LogLevel__Default: Information
+  Logging__LogLevel__Microsoft.AspNetCore: Warning
+
+  # JWT
+  JwtOption__Issuer: ${JWT_ISSUER}
+  JwtOption__Audience: ${JWT_AUDIENCE}
+  JwtOption__SecretKey: ${JWT_SECRET}
+  JwtOption__ExpireMin: ${JWT_EXPIRE_MIN:-5}
+
+  # Reverse proxy routes
+  ReverseProxy__Routes__authApiRoute__ClusterId: authApiCluster
+  ReverseProxy__Routes__authApiRoute__Match__Path: auth-api/{**catch-all}
+  ReverseProxy__Routes__authApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+
+  ReverseProxy__Routes__commandApiRoute__ClusterId: commandApiCluster
+  ReverseProxy__Routes__commandApiRoute__Match__Path: command-api/{**catch-all}
+  ReverseProxy__Routes__commandApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+
+  ReverseProxy__Routes__queryApiRoute__ClusterId: queryApiCluster
+  ReverseProxy__Routes__queryApiRoute__Match__Path: query-api/{**catch-all}
+  ReverseProxy__Routes__queryApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+
+  ReverseProxy__Routes__signalingApiRoute__ClusterId: signalingApiCluster
+  ReverseProxy__Routes__signalingApiRoute__Match__Path: signaling-api/{**catch-all}
+  ReverseProxy__Routes__signalingApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+
+  # Reverse proxy clusters (per-environment backend addresses)
+  ReverseProxy__Clusters__authApiCluster__Destinations__Destination1__Address: ${ADDRESS_AUTH}
+  ReverseProxy__Clusters__commandApiCluster__Destinations__Destination1__Address: ${ADDRESS_COMMAND}
+  ReverseProxy__Clusters__queryApiCluster__Destinations__Destination1__Address: ${ADDRESS_QUERY}
+  ReverseProxy__Clusters__signalingApiCluster__Destinations__Destination1__Address: ${ADDRESS_SIGNALING}
+
+  AllowedHosts: "*"
+
+x-gateway-base: &gateway-base
+  image: ${REGISTRY}/hoatheomua-api-gateway:${TAG:-latest}
+  build:
+    context: ..
+    dockerfile: HoaTheoMua.ApiGateway/Dockerfile
+  restart: unless-stopped
+
+services:
+  hoatheomua-gateway-dev:
+    <<: *gateway-base
+    container_name: hoatheomua-gateway-dev
+    hostname: hoatheomua-gateway-dev
+    environment:
+      <<: *gateway-env
+    ports:
+      - "${HTTP_PORT}:8080"
+    networks: [hoatheomua-gateway-network-dev]
+    profiles: [dev, api-dev, api, dev-pull]
+
+  hoatheomua-gateway-prod:
+    <<: *gateway-base
+    container_name: hoatheomua-gateway-prod
+    hostname: hoatheomua-gateway-prod
+    environment:
+      <<: *gateway-env
+    ports:
+      - "${HTTP_PORT}:8080"
+    networks: [hoatheomua-gateway-network-prod]
+    profiles: [prod, api-prod, api, prod-pull]
+
+  hoatheomua-cloudflare-dev:
+    <<: *cloudflare-tunnel
+    container_name: hoatheomua-gateway-cloudflare-dev
+    hostname: hoatheomua-gateway-cloudflare-dev
+    networks: [hoatheomua-gateway-network-dev]
+    profiles: [dev, cloudflare-dev, proxy, dev-pull]
+
+  hoatheomua-cloudflare-prod:
+    <<: *cloudflare-tunnel
+    container_name: hoatheomua-gateway-cloudflare-prod
+    hostname: hoatheomua-gateway-cloudflare-prod
+    networks: [hoatheomua-gateway-network-prod]
+    profiles: [prod, cloudflare-prod, proxy, prod-pull]
+
+networks:
+  hoatheomua-gateway-network-dev:
+    name: hoatheomua-gateway-network-dev
+    driver: bridge
+    ipam:
+      driver: default
+  hoatheomua-gateway-network-prod:
+    name: hoatheomua-gateway-network-prod
+    driver: bridge
+    ipam:
+      driver: default

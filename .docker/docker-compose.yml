@@ -1,0 +1,60 @@
+# Standalone single-environment compose (base file).
+# Use directly:           docker compose -f .docker/docker-compose.yml up -d
+# Or layer an overlay:    docker compose -f .docker/docker-compose.yml -f .docker/compose.dev.yml up -d
+#                         docker compose -f .docker/docker-compose.yml -f .docker/compose.prod.yml up -d
+# For CI/CD the profile-based .docker/compose.yaml is used instead.
+services:
+  hoatheomua-gateway:
+    build:
+      context: ..
+      dockerfile: HoaTheoMua.ApiGateway/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT}:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ENVIRONMENT}
+      ASPNETCORE_URLS: http://+:8080
+
+      # Logging
+      Logging__LogLevel__Default: Information
+      Logging__LogLevel__Microsoft.AspNetCore: Warning
+
+      # JWT
+      JwtOption__Issuer: ${JWT_ISSUER}
+      JwtOption__Audience: ${JWT_AUDIENCE}
+      JwtOption__SecretKey: ${JWT_SECRET}
+      JwtOption__ExpireMin: ${JWT_EXPIRE_MIN:-5}
+
+      # Reverse proxy routes
+      ReverseProxy__Routes__authApiRoute__ClusterId: authApiCluster
+      ReverseProxy__Routes__authApiRoute__Match__Path: auth-api/{**catch-all}
+      ReverseProxy__Routes__authApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+
+      ReverseProxy__Routes__commandApiRoute__ClusterId: commandApiCluster
+      ReverseProxy__Routes__commandApiRoute__Match__Path: command-api/{**catch-all}
+      ReverseProxy__Routes__commandApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+
+      ReverseProxy__Routes__queryApiRoute__ClusterId: queryApiCluster
+      ReverseProxy__Routes__queryApiRoute__Match__Path: query-api/{**catch-all}
+      ReverseProxy__Routes__queryApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+
+      ReverseProxy__Routes__signalingApiRoute__ClusterId: signalingApiCluster
+      ReverseProxy__Routes__signalingApiRoute__Match__Path: signaling-api/{**catch-all}
+      ReverseProxy__Routes__signalingApiRoute__Transforms__0__PathPattern: api/{**catch-all}
+
+      # Reverse proxy clusters (backend addresses)
+      ReverseProxy__Clusters__authApiCluster__Destinations__Destination1__Address: ${ADDRESS_AUTH}
+      ReverseProxy__Clusters__commandApiCluster__Destinations__Destination1__Address: ${ADDRESS_COMMAND}
+      ReverseProxy__Clusters__queryApiCluster__Destinations__Destination1__Address: ${ADDRESS_QUERY}
+      ReverseProxy__Clusters__signalingApiCluster__Destinations__Destination1__Address: ${ADDRESS_SIGNALING}
+
+      AllowedHosts: "*"
+    networks:
+      - hoatheomua-gateway-network
+
+networks:
+  hoatheomua-gateway-network:
+    name: hoatheomua-gateway-network
+    driver: bridge
+    ipam:
+      driver: default

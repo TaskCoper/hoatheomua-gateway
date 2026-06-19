@@ -1,0 +1,6 @@
+# Prod overlay for docker-compose.yml — prod container name.
+# Usage: docker compose -f .docker/docker-compose.yml -f .docker/compose.prod.yml up -d
+# (Run one environment at a time with its own .env; use compose.yaml profiles to run dev + prod side by side.)
+services:
+  hoatheomua-gateway:
+    container_name: hoatheomua-gateway-prod
