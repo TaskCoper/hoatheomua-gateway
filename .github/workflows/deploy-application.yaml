@@ -40,12 +40,6 @@ jobs:
       # HTTP
       HTTP_PORT: ${{ secrets.HTTP_PORT }}
 
-      # JWT
-      JWT_ISSUER: ${{ secrets.JWT_ISSUER }}
-      JWT_AUDIENCE: ${{ secrets.JWT_AUDIENCE }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      JWT_EXPIRE_MIN: ${{ secrets.JWT_EXPIRE_MIN }}
-
       # Reverse proxy backend addresses
       ADDRESS_ECOMMERCE: ${{ secrets.ADDRESS_ECOMMERCE }}
       ADDRESS_TASKCOPER: ${{ secrets.ADDRESS_TASKCOPER }}

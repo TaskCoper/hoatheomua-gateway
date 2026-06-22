@@ -6,14 +6,13 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 // Add services to the container.
-builder.Services.AddJwtAuthenticationApiGateway(builder.Configuration);
 builder.Services.AddReverseProxyApiGateway(builder.Configuration);
 
 var app = builder.Build();
-// Configure the HTTP request pipeline.
-app.UseAuthentication();
-app.UseAuthorization();
 
+// Configure the HTTP request pipeline.
+// Gateway is a pure pass-through proxy: it does NOT authenticate or authorize.
+// Each downstream service owns its own authn/authz (validates the forwarded token itself).
 app.MapReverseProxy();
 
 app.Run();
