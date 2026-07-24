@@ -55,21 +55,21 @@ services:
       <<: *gateway-env
     ports:
       - "${HTTP_PORT}:8080"
-    networks: [hoatheomua-gateway-network-prod]
+    networks: [hoatheomua-gateway-network-prod, hoatheomua-network-prod]
     profiles: [prod, api-prod, api, prod-pull]
 
   hoatheomua-cloudflare-dev:
     <<: *cloudflare-tunnel
     container_name: hoatheomua-gateway-cloudflare-dev
     hostname: hoatheomua-gateway-cloudflare-dev
-    networks: [hoatheomua-gateway-network-dev]
+    networks: [hoatheomua-gateway-network-dev, hoatheomua-network-dev]
     profiles: [dev, cloudflare-dev, proxy, dev-pull]
 
   hoatheomua-cloudflare-prod:
     <<: *cloudflare-tunnel
     container_name: hoatheomua-gateway-cloudflare-prod
     hostname: hoatheomua-gateway-cloudflare-prod
-    networks: [hoatheomua-gateway-network-prod]
+    networks: [hoatheomua-gateway-network-prod, hoatheomua-network-prod]
     profiles: [prod, cloudflare-prod, proxy, prod-pull]
 
 networks:
@@ -87,5 +87,10 @@ networks:
   # Owned/created by the be's dev compose — must already exist before `up`.
   hoatheomua-network-dev:
     name: hoatheomua-network-dev
+    external: true
+  # Shared with hoatheomua-be (prod) so the gateway can reach the prod backend services.
+  # Owned/created by the be's prod compose — must already exist before `up`.
+  hoatheomua-network-prod:
+    name: hoatheomua-network-prod
     external: true
 
