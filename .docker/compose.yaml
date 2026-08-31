@@ -13,12 +13,6 @@ x-gateway-env: &gateway-env
   Logging__LogLevel__Default: Information
   Logging__LogLevel__Microsoft.AspNetCore: Warning
 
-  # JWT
-  JwtOption__Issuer: ${JWT_ISSUER}
-  JwtOption__Audience: ${JWT_AUDIENCE}
-  JwtOption__SecretKey: ${JWT_SECRET}
-  JwtOption__ExpireMin: ${JWT_EXPIRE_MIN:-5}
-
   # Reverse proxy routes
   ReverseProxy__Routes__ecommerceApiRoute__ClusterId: ecommerceApiCluster
   ReverseProxy__Routes__ecommerceApiRoute__Match__Path: ecommerce-api/{**catch-all}
@@ -50,7 +44,7 @@ services:
       <<: *gateway-env
     ports:
       - "${HTTP_PORT}:8080"
-    networks: [hoatheomua-gateway-network-dev]
+    networks: [hoatheomua-gateway-network-dev, hoatheomua-network-dev]
     profiles: [dev, api-dev, api, dev-pull]
 
   hoatheomua-gateway-prod:
@@ -61,21 +55,21 @@ services:
       <<: *gateway-env
     ports:
       - "${HTTP_PORT}:8080"
-    networks: [hoatheomua-gateway-network-prod]
+    networks: [hoatheomua-gateway-network-prod, hoatheomua-network-prod]
     profiles: [prod, api-prod, api, prod-pull]
 
   hoatheomua-cloudflare-dev:
     <<: *cloudflare-tunnel
     container_name: hoatheomua-gateway-cloudflare-dev
     hostname: hoatheomua-gateway-cloudflare-dev
-    networks: [hoatheomua-gateway-network-dev]
+    networks: [hoatheomua-gateway-network-dev, hoatheomua-network-dev]
     profiles: [dev, cloudflare-dev, proxy, dev-pull]
 
   hoatheomua-cloudflare-prod:
     <<: *cloudflare-tunnel
     container_name: hoatheomua-gateway-cloudflare-prod
     hostname: hoatheomua-gateway-cloudflare-prod
-    networks: [hoatheomua-gateway-network-prod]
+    networks: [hoatheomua-gateway-network-prod, hoatheomua-network-prod]
     profiles: [prod, cloudflare-prod, proxy, prod-pull]
 
 networks:
@@ -89,3 +83,14 @@ networks:
     driver: bridge
     ipam:
       driver: default
+  # Shared with hoatheomua-be (dev) so the gateway can reach hoatheomua-api-dev:8080.
+  # Owned/created by the be's dev compose — must already exist before `up`.
+  hoatheomua-network-dev:
+    name: hoatheomua-network-dev
+    external: true
+  # Shared with hoatheomua-be (prod) so the gateway can reach the prod backend services.
+  # Owned/created by the be's prod compose — must already exist before `up`.
+  hoatheomua-network-prod:
+    name: hoatheomua-network-prod
+    external: true
+

@@ -482,3 +482,4 @@ HoaTheoMua.ApiGateway/appsettings.Development.json
 
 # Docker local env (contains secrets — do not commit)
 .docker/.env
+.docker/.env.dev
