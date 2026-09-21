@@ -15,6 +15,7 @@ x-gateway-env: &gateway-env
 
   # Reverse proxy routes
   ReverseProxy__Routes__ecommerceApiRoute__ClusterId: ecommerceApiCluster
+  ReverseProxy__Routes__ecommerceApiRoute__Timeout: "00:02:00"
   ReverseProxy__Routes__ecommerceApiRoute__Match__Path: ecommerce-api/{**catch-all}
   ReverseProxy__Routes__ecommerceApiRoute__Transforms__0__PathPattern: api/{**catch-all}
 
@@ -24,6 +25,7 @@ x-gateway-env: &gateway-env
 
   # Reverse proxy clusters (per-environment backend addresses)
   ReverseProxy__Clusters__ecommerceApiCluster__Destinations__Destination1__Address: ${ADDRESS_ECOMMERCE}
+  ReverseProxy__Clusters__ecommerceApiCluster__HttpRequest__ActivityTimeout: "00:02:00"
   ReverseProxy__Clusters__taskcoperApiCluster__Destinations__Destination1__Address: ${ADDRESS_TASKCOPER}
 
   AllowedHosts: "*"
