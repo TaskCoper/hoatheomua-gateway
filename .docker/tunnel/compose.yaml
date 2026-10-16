@@ -1,0 +1,29 @@
+# Operated on the server independently of application CI/CD. Use manage.sh.
+name: ${TUNNEL_PROJECT:?Use manage.sh to select an instance}
+
+services:
+  cloudflared:
+    image: ${CLOUDFLARED_IMAGE:?Set a pinned cloudflare/cloudflared image in the instance env file}
+    container_name: ${TUNNEL_PROJECT}-cloudflared
+    restart: unless-stopped
+    command: [tunnel, --no-autoupdate, --metrics, '127.0.0.1:2000', --protocol, '${CLOUDFLARED_PROTOCOL:-auto}', run]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Set the existing tunnel token in the instance env file}
+    networks: [app]
+    healthcheck:
+      test: [CMD, cloudflared, tunnel, --metrics, '127.0.0.1:2000', ready]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
+    stop_grace_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '5'
+
+networks:
+  app:
+    name: ${TUNNEL_APP_NETWORK:?Use manage.sh to select an instance}
+    external: true
