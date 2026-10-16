@@ -44,9 +44,6 @@ jobs:
       ADDRESS_ECOMMERCE: ${{ secrets.ADDRESS_ECOMMERCE }}
       ADDRESS_TASKCOPER: ${{ secrets.ADDRESS_TASKCOPER }}
 
-      # Cloudflare
-      CLOUDFLARE_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARE_TUNNEL_TOKEN }}
-
       TAG: ${{ inputs.tag }}
     steps:
       - name: Checkout Repository
@@ -66,6 +63,24 @@ jobs:
         run: |
           REPO_LOWER=$(echo "${{ inputs.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "REGISTRY=ghcr.io/$REPO_LOWER" >> $GITHUB_ENV
+      # Tunnel containers and shared networks are managed outside application CI/CD.
+      # Do not add --remove-orphans: legacy connectors stay up during migration.
+      - name: Verify external networks
+        shell: bash
+        env:
+          DEPLOY_PROFILE: ${{ inputs.profile }}
+        run: |
+          case "$DEPLOY_PROFILE" in
+            dev|prod) networks=("hoatheomua-network-$DEPLOY_PROFILE" "hoatheomua-gateway-network-$DEPLOY_PROFILE") ;;
+            *) echo "Unsupported deployment profile: $DEPLOY_PROFILE" >&2; exit 1 ;;
+          esac
+          for network in "${networks[@]}"; do
+            docker network inspect "$network" >/dev/null || {
+              echo "Missing network $network. Run the standalone tunnel bootstrap first." >&2
+              exit 1
+            }
+          done
+
       - name: Pull New Image From Registry
         run: docker compose -f .docker/compose.yaml -p hoatheomua-gateway-${{ inputs.profile }} --profile ${{ inputs.pull-profile }} pull
 
@@ -73,7 +88,7 @@ jobs:
         run: docker compose -f .docker/compose.yaml -p hoatheomua-gateway-${{ inputs.profile }} --profile ${{ inputs.environment }} up -d
 
       - name: Prune Old Image
-        run: docker image prune -af
+        run: docker image prune -f --filter "until=24h"
 
       - name: Notify Deployment Success
         run: |
