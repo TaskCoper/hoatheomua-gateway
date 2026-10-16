@@ -1,10 +1,3 @@
-x-cloudflare-tunnel: &cloudflare-tunnel
-  image: cloudflare/cloudflared
-  restart: unless-stopped
-  command: tunnel run
-  environment:
-    - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
-
 x-gateway-env: &gateway-env
   ASPNETCORE_ENVIRONMENT: ${ENVIRONMENT}
   ASPNETCORE_URLS: http://+:8080
@@ -60,38 +53,20 @@ services:
     networks: [hoatheomua-gateway-network-prod, hoatheomua-network-prod]
     profiles: [prod, api-prod, api, prod-pull]
 
-  hoatheomua-cloudflare-dev:
-    <<: *cloudflare-tunnel
-    container_name: hoatheomua-gateway-cloudflare-dev
-    hostname: hoatheomua-gateway-cloudflare-dev
-    networks: [hoatheomua-gateway-network-dev, hoatheomua-network-dev]
-    profiles: [dev, cloudflare-dev, proxy, dev-pull]
-
-  hoatheomua-cloudflare-prod:
-    <<: *cloudflare-tunnel
-    container_name: hoatheomua-gateway-cloudflare-prod
-    hostname: hoatheomua-gateway-cloudflare-prod
-    networks: [hoatheomua-gateway-network-prod, hoatheomua-network-prod]
-    profiles: [prod, cloudflare-prod, proxy, prod-pull]
-
 networks:
   hoatheomua-gateway-network-dev:
     name: hoatheomua-gateway-network-dev
-    driver: bridge
-    ipam:
-      driver: default
+    external: true
   hoatheomua-gateway-network-prod:
     name: hoatheomua-gateway-network-prod
-    driver: bridge
-    ipam:
-      driver: default
+    external: true
   # Shared with hoatheomua-be (dev) so the gateway can reach hoatheomua-api-dev:8080.
-  # Owned/created by the be's dev compose — must already exist before `up`.
+  # Provisioned independently of app deployment; see the tunnel deployment guide.
   hoatheomua-network-dev:
     name: hoatheomua-network-dev
     external: true
   # Shared with hoatheomua-be (prod) so the gateway can reach the prod backend services.
-  # Owned/created by the be's prod compose — must already exist before `up`.
+  # Provisioned independently of app deployment; see the tunnel deployment guide.
   hoatheomua-network-prod:
     name: hoatheomua-network-prod
     external: true

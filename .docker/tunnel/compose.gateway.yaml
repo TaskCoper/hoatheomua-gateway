@@ -1,0 +1,9 @@
+# Preserve both networks used by the original gateway connector.
+services:
+  cloudflared:
+    networks: [gateway]
+
+networks:
+  gateway:
+    name: ${TUNNEL_GATEWAY_NETWORK:?Use manage.sh with a gateway instance}
+    external: true
