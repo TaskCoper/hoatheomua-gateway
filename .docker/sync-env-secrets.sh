@@ -12,8 +12,8 @@ REPO="${REPO:-TaskCoper/hoatheomua-gateway}"
 ENV_FILE="${ENV_FILE:-$(dirname "$0")/.env}"
 ENVIRONMENTS="${ENVIRONMENTS:-dev prod}"
 
-# Keys present in .env that should NOT become secrets (computed in CI).
-EXCLUDE='^(REGISTRY|TAG)='
+# Computed CI values and tunnel credentials managed independently on the server.
+EXCLUDE='^(REGISTRY|TAG|CLOUDFLARE_TUNNEL_TOKEN|CLOUDFLARED_IMAGE)='
 
 [ -f "$ENV_FILE" ] || { echo "env file not found: $ENV_FILE" >&2; exit 1; }
 
